@@ -1,14 +1,21 @@
+from typing import Any
+
 import psycopg2
+
+from config import config
+
+params = config()
 
 
 class DBManager:
     """Класс для работы с БД"""
+
     def __init__(self, database_name):
         self.params = params
         self.params['dbname'] = database_name
 
     @staticmethod
-    def create_database(database_name, params):
+    def create_database(database_name):
         """Создает БД"""
         try:
             conn = psycopg2.connect(**params)
@@ -20,7 +27,7 @@ class DBManager:
             print('Error creating database', error)
 
     @staticmethod
-    def create_table(database_name, params):
+    def create_table(database_name):
         """Создает таблицы employers и employers в указанной БД"""
         conn = None
         try:
@@ -109,7 +116,7 @@ class DBManager:
         return answer
 
     @staticmethod
-    def save_data_to_database(data: list[dict[str, Any]], database_name: str, params: dict):
+    def save_data_to_database(data: list[dict[str, Any]], database_name: str):
         """Сохранение данных о каналах и видео в базу данных."""
         conn = psycopg2.connect(dbname=database_name, **params)
         with conn.cursor() as curr:
