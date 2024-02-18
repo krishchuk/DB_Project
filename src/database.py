@@ -12,10 +12,9 @@ class DBManager:
 
     def __init__(self, database_name):
         self.params = params
-        self.params['dbname'] = database_name
 
-    @staticmethod
-    def create_database(database_name):
+    @classmethod
+    def create_database(cls, database_name):
         """Создает БД"""
         try:
             conn = psycopg2.connect(**params)
@@ -34,7 +33,7 @@ class DBManager:
             conn = psycopg2.connect(**params, dbname=database_name)
             with conn.cursor() as curr:
                 curr.execute('DROP TABLE IF EXISTS employers CASCADE;')
-                curr.execute('DROP TABLE IF EXISTS employers CASCADE;')
+                curr.execute('DROP TABLE IF EXISTS vacancies CASCADE;')
                 curr.execute(
                     'CREATE TABLE employers('
                     'employer_id int PRIMARY KEY,'
@@ -120,23 +119,29 @@ class DBManager:
         """Сохранение данных о каналах и видео в базу данных."""
         conn = psycopg2.connect(dbname=database_name, **params)
         with conn.cursor() as curr:
-            for vacancy in data:
-                employer_data = vacancy['employer']
+            for employer in data:
                 curr.execute(
                     """
                     INSERT INTO employers (employer_id, company_name, url)
                     VALUES (%s, %s, %s)
                     RETURNING employer_id
                     """,
-                    (employer_data['id'], employer_data['name'], employer_data['alternate_url'])
+                    (employer['id'], employer['name'], employer['alternate_url'])
                 )
-                curr.execute(
-                    """
-                    INSERT INTO videos (vacancy_id, vacancy_name, salary_from, salary_to, title, url, employer_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (vacancy['id'], vacancy['name'], vacancy['salary']['from'], vacancy['salary']['to'],
-                     vacancy['snippet']['responsibility'], vacancy['alternate_url'], vacancy['employer']['id'])
-                )
+                for vacancy in employer['vacancies_url']['items']:
+                    if vacancy['salary'] is None:
+                        vacancy['salary'] = {}
+                    elif vacancy['salary']['from'] is None:
+                        vacancy['salary']['from'] = 0
+                    elif vacancy['salary']['to'] is None:
+                        vacancy['salary']['to'] = 0
+                    curr.execute(
+                        """
+                        INSERT INTO vacancies (vacancy_id, vacancy_name, salary_from, salary_to, title, url, employer_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (vacancy['id'], vacancy['name'], vacancy['salary'].get('from', 0), vacancy['salary'].get('to', 0),
+                         vacancy['snippet']['responsibility'], vacancy['alternate_url'], vacancy['employer']['id'])
+                    )
         conn.commit()
         conn.close()

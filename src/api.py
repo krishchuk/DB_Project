@@ -1,19 +1,24 @@
 import requests
 from dotenv import load_dotenv
 
-from config import HH_URL, EMPLOYERS_ID_LIST
+from config import HH_URL_EMPLOYERS
 
 load_dotenv()
 
 
 class HeadHunterAPI:
     """Класс для получения данных с hh.ru через API"""
-    def __init__(self) -> None:
-        self.params = {
-            "employer_id": EMPLOYERS_ID_LIST,
-            "per_page": 100
-        }
 
-    def get_data(self, page=0) -> list[dict]:
-        self.params["page"] = page
-        return requests.get(url=HH_URL, params=self.params).json()["items"]
+    @staticmethod
+    def get_data() -> list[dict]:
+        employers_list = []
+
+        for employer in HH_URL_EMPLOYERS:
+            employer_data = requests.get(url=employer).json()
+            employer_dict = {'id': employer_data['id'],
+                             'name': employer_data['name'],
+                             'alternate_url': employer_data['alternate_url'],
+                             'vacancies_url': requests.get(url=employer_data['vacancies_url']).json()
+                             }
+            employers_list.append(employer_dict)
+        return employers_list

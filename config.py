@@ -12,7 +12,8 @@ EMPLOYERS_ID_LIST = [
     "2136954",
     "64174"
 ]
-HH_URL = "https://api.hh.ru/vacancies"
+
+HH_URL_EMPLOYERS = [f"https://api.hh.ru/employers/{employer}" for employer in EMPLOYERS_ID_LIST]
 
 
 def config(filename="config.ini", section="postgresql"):
