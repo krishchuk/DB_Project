@@ -10,12 +10,12 @@ params = config()
 class DBManager:
     """Класс для работы с БД"""
 
-    def __init__(self, database_name):
+    def __init__(self, database_name, **params):
         self.params = params
         self.params['dbname'] = database_name
 
-    @classmethod
-    def create_database(cls, database_name):
+    @staticmethod
+    def create_database(database_name):
         """Создает БД"""
         try:
             conn = psycopg2.connect(**params)
@@ -28,11 +28,11 @@ class DBManager:
             print('Error creating database', error)
 
     @staticmethod
-    def create_table():
+    def create_tables(database_name):
         """Создает таблицы employers и employers в указанной БД"""
         conn = None
         try:
-            conn = psycopg2.connect(**params)
+            conn = psycopg2.connect(**params, dbname=database_name)
             with conn.cursor() as curr:
                 curr.execute('DROP TABLE IF EXISTS employers CASCADE;')
                 curr.execute('DROP TABLE IF EXISTS vacancies CASCADE;')
@@ -60,9 +60,9 @@ class DBManager:
                 conn.close()
 
     @staticmethod
-    def get_companies_and_vacancies_count():
+    def get_companies_and_vacancies_count(database_name):
         """Получает список всех компаний и количество вакансий у каждой компании"""
-        with psycopg2.connect(**params) as conn:
+        with psycopg2.connect(**params, dbname=database_name) as conn:
             with conn.cursor() as curr:
                 curr.execute('SELECT company_name, COUNT(*) FROM employers '
                              'INNER JOIN '
@@ -72,18 +72,18 @@ class DBManager:
         return answer
 
     @staticmethod
-    def get_all_vacancies():
+    def get_all_vacancies(database_name):
         """Получает список всех вакансий"""
-        with psycopg2.connect(**params) as conn:
+        with psycopg2.connect(**params, dbname=database_name) as conn:
             with conn.cursor() as curr:
                 curr.execute('SELECT * FROM vacancies')
                 answer = curr.fetchall()
         return answer
 
     @staticmethod
-    def get_avg_salary():
+    def get_avg_salary(database_name):
         """Получает среднюю зарплату по вакансиям"""
-        with psycopg2.connect(**params) as conn:
+        with psycopg2.connect(**params, dbname=database_name) as conn:
             with conn.cursor() as curr:
                 curr.execute('SELECT salary_from, salary_to FROM vacancies')
                 answer = curr.fetchall()
@@ -103,10 +103,10 @@ class DBManager:
         return avg_salary_all_vacancies
 
     @staticmethod
-    def get_vacancies_with_higher_salary():
+    def get_vacancies_with_higher_salary(database_name):
         """Получает список вакансий с зарплатой выше средней по всем вакансиям"""
-        avg_salary = DBManager.get_avg_salary()
-        with psycopg2.connect(**params) as conn:
+        avg_salary = DBManager.get_avg_salary(database_name)
+        with psycopg2.connect(**params, dbname=database_name) as conn:
             with conn.cursor() as curr:
                 curr.execute('SELECT vacancy_name, url FROM vacancies WHERE (salary_from + salary_to) / 2 > %s',
                              (avg_salary,))
@@ -114,9 +114,9 @@ class DBManager:
         return answer
 
     @staticmethod
-    def get_vacancies_with_keyword(keyword):
+    def get_vacancies_with_keyword(keyword, database_name):
         """Получает список всех вакансий, в названии которогых есть переданные ключевые слова"""
-        with psycopg2.connect(**params) as conn:
+        with psycopg2.connect(**params, dbname=database_name) as conn:
             with conn.cursor() as curr:
                 curr.execute('SELECT vacancy_name, url FROM vacancies WHERE vacancy_name LIKE %s',
                              ('%' + keyword + '%',))
@@ -124,9 +124,9 @@ class DBManager:
         return answer
 
     @staticmethod
-    def save_data_to_database(data: list[dict[str, Any]]):
+    def save_data_to_database(data: list[dict[str, Any]], database_name):
         """Сохранение данных о каналах и видео в базу данных."""
-        conn = psycopg2.connect(**params)
+        conn = psycopg2.connect(**params, dbname=database_name)
         with conn.cursor() as curr:
             for employer in data:
                 curr.execute(

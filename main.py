@@ -7,8 +7,8 @@ def main():
     hh_data = hh.get_data()
     db = DBManager('hh_db')
     db.create_database('hh_db')
-    db.create_table()
-    db.save_data_to_database(hh_data)
+    db.create_tables('hh_db')
+    db.save_data_to_database(hh_data, 'hh_db')
 
     while True:
         print('\nВыберите действие:')
@@ -22,13 +22,13 @@ def main():
         user_input = input('\nВведите соответсвующее запросу число: ')
 
         if user_input == '1':
-            companies_and_vacancies_count = db.get_companies_and_vacancies_count()
+            companies_and_vacancies_count = db.get_companies_and_vacancies_count('hh_db')
             print('\nСписок компаний и вакансий:')
             for company, count in companies_and_vacancies_count:
                 print(company, '-', count, 'вакансий')
 
         elif user_input == '2':
-            all_vacancies = db.get_all_vacancies()
+            all_vacancies = db.get_all_vacancies('hh_db')
             print('\nСписок всех вакансий:')
             for vacancy_id, vacancy_name, salary_from, salary_to, title, url, employer_id in all_vacancies:
                 if salary_from == 0 and salary_to == 0:
@@ -41,18 +41,18 @@ def main():
                     print(f'{vacancy_name} от {salary_from} до {salary_to} руб.: {url}')
 
         elif user_input == '3':
-            avg_salary = db.get_avg_salary()
+            avg_salary = db.get_avg_salary('hh_db')
             print(f'\nСредняя зарплата по всем вакансиям: {'%.2f' % avg_salary} руб.')
 
         elif user_input == '4':
-            vacancies_with_higher_salary = db.get_vacancies_with_higher_salary()
-            print(f'\nВакансии с зарплатой выше средней ({'%.2f' % db.get_avg_salary()} руб.):')
+            vacancies_with_higher_salary = db.get_vacancies_with_higher_salary('hh_db')
+            print(f'\nВакансии с зарплатой выше средней ({'%.2f' % db.get_avg_salary('hh_db')} руб.):')
             for company, url in vacancies_with_higher_salary:
                 print(company, '-', url)
 
         elif user_input == '5':
             keyword = input('\nВведите ключевое слово: ')
-            vacancies_with_keyword = db.get_vacancies_with_keyword(keyword)
+            vacancies_with_keyword = db.get_vacancies_with_keyword(keyword, 'hh_db')
             print('\nВакансии по ключевому слову:')
             for vacancy, url in vacancies_with_keyword:
                 print(vacancy, '-', url)
