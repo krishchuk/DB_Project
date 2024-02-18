@@ -12,6 +12,7 @@ class DBManager:
 
     def __init__(self, database_name):
         self.params = params
+        self.params['dbname'] = database_name
 
     @classmethod
     def create_database(cls, database_name):
@@ -22,15 +23,16 @@ class DBManager:
                 conn.autocommit = True
                 curr.execute(f'CREATE DATABASE {database_name}')
             conn.close()
+            print(f'База данных {database_name} создана успешно')
         except Exception as error:
             print('Error creating database', error)
 
     @staticmethod
-    def create_table(database_name):
+    def create_table():
         """Создает таблицы employers и employers в указанной БД"""
         conn = None
         try:
-            conn = psycopg2.connect(**params, dbname=database_name)
+            conn = psycopg2.connect(**params)
             with conn.cursor() as curr:
                 curr.execute('DROP TABLE IF EXISTS employers CASCADE;')
                 curr.execute('DROP TABLE IF EXISTS vacancies CASCADE;')
@@ -62,7 +64,10 @@ class DBManager:
         """Получает список всех компаний и количество вакансий у каждой компании"""
         with psycopg2.connect(**params) as conn:
             with conn.cursor() as curr:
-                curr.execute('SELECT company_name, COUNT(*) as vacancy_count FROM employers GROUP BY company_name')
+                curr.execute('SELECT company_name, COUNT(*) FROM employers '
+                             'INNER JOIN '
+                             'vacancies ON employers.employer_id = vacancies.employer_id '
+                             'GROUP BY employers.employer_id')
                 answer = curr.fetchall()
         return answer
 
@@ -82,6 +87,8 @@ class DBManager:
             with conn.cursor() as curr:
                 curr.execute('SELECT salary_from, salary_to FROM vacancies')
                 answer = curr.fetchall()
+                salary_all_vacancies = 0
+                vacancies_with_salary = 0
                 for row in answer:
                     if row[0] != 0 and row[1] != 0:
                         avg_salary = (row[1] + row[0]) / 2
@@ -89,9 +96,11 @@ class DBManager:
                         avg_salary = row[0]
                     elif row[0] == 0 and row[1] != 0:
                         avg_salary = row[1]
-                    elif row[0] == 0 and row[1] == 0:
-                        avg_salary = 0
-        return avg_salary
+                    if row[0] != 0 or row[1] != 0:
+                        salary_all_vacancies += avg_salary
+                        vacancies_with_salary += 1
+                avg_salary_all_vacancies = salary_all_vacancies / vacancies_with_salary
+        return avg_salary_all_vacancies
 
     @staticmethod
     def get_vacancies_with_higher_salary():
@@ -115,9 +124,9 @@ class DBManager:
         return answer
 
     @staticmethod
-    def save_data_to_database(data: list[dict[str, Any]], database_name: str):
+    def save_data_to_database(data: list[dict[str, Any]]):
         """Сохранение данных о каналах и видео в базу данных."""
-        conn = psycopg2.connect(dbname=database_name, **params)
+        conn = psycopg2.connect(**params)
         with conn.cursor() as curr:
             for employer in data:
                 curr.execute(
